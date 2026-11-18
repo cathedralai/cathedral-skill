@@ -226,3 +226,4 @@ Labels: `cathedral-2x4` (2 vCPU, 4 GiB), `cathedral-4x8` (4 vCPU, 8 GiB), `cathe
 - Docs index: https://cathedral.computer/llms.txt
 - Errors: https://cathedral.computer/docs/help/sealed-errors/
 - Every ctcli command: `ctcli sandbox --help`, `ctcli sandbox <command> --help`
+- Compute providers and miners on Bittensor SN94: https://cathedral.computer/miners.md
