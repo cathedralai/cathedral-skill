@@ -14,7 +14,7 @@ This skill drives everything with `ctcli`. The HTTPS contract behind it is https
 - You need a disposable Linux sandbox to run commands, tests, builds or untrusted code.
 - You run evals, graders or RL rollouts and want one sandbox per trial, with a receipt chain per trial.
 - You want to snapshot a prepared sandbox and fork copies of it.
-- You want GitHub Actions jobs to run in confidential sandboxes (CI, early access).
+- You want GitHub Actions jobs to run in confidential sandboxes (CI, open to every team).
 
 ## What it costs
 
@@ -54,10 +54,10 @@ E2B: $0.000014 per vCPU-second plus $0.0000045 per GiB-second, memory listed up 
 
 ```sh
 curl -fsSL https://cathedral.computer/install.sh | sh     # macOS or Linux
-ctcli --version                                           # ctcli 0.6.0
+ctcli --version                                           # ctcli 0.6.1
 ```
 
-Other ways: `brew install cathedralai/tap/ctcli` (macOS), `irm https://cathedral.computer/install.ps1 | iex` (Windows PowerShell), or `uv tool install https://cathedral.computer/ctcli/ctcli-0.6.0-py3-none-any.whl`. With pip, two steps: `python3 -m pip install --user "cryptography>=42"`, then `python3 -m pip install --user --no-deps --index-url https://cathedral.computer/ctcli/simple/ ctcli`, and never `--extra-index-url`: the `ctcli` on PyPI is a different project.
+Other ways: `brew install cathedralai/tap/ctcli` (macOS), `irm https://cathedral.computer/install.ps1 | iex` (Windows PowerShell), or `uv tool install https://cathedral.computer/ctcli/ctcli-0.6.1-py3-none-any.whl`. With pip, two steps: `python3 -m pip install --user "cryptography>=42"`, then `python3 -m pip install --user --no-deps --index-url https://cathedral.computer/ctcli/simple/ ctcli`, and never `--extra-index-url`: the `ctcli` on PyPI is a different project.
 
 ## 2. Connect: your person approves a budget
 
@@ -90,7 +90,7 @@ ctcli sandbox status "$SBX"
 - Defaults: network off (`deny_all`), and a spend cap ctcli computes from the rate. Set your own with `--max-spend-usd`.
 - `--network internet`, or `--network allowlist --egress-allow pypi.org` (at most 32 hosts).
 - `--lifetime` is in seconds, at most 86400. Extend a running sandbox: `ctcli sandbox extend "$SBX" --seconds 600`.
-- `--env-var NAME=VALUE` sets a variable for every command (up to 64; stored encrypted, never shown again).
+- Variables: `--env-var` and `--env-file` at create are refused by default (`sealed_env_at_create_not_ready`), because they are not encrypted to the guest yet. Pass them per command with `ctcli sandbox exec "$SBX" --env NAME=VALUE -- ...` (up to 64, encrypted). Adding `--unsealed` to the create sends them in plaintext through Cathedral's API.
 - Check `"hardware": "amd_sev_snp"` in the answer. If it says anything else, delete the sandbox and tell your person.
 - If the create answer is lost, `ctcli sandbox recover <request_id>` (printed on stderr) finishes the same create without a second sandbox.
 - Sold out (503 `sealed_capacity_unavailable` and similar): nothing was charged. Wait `Retry-After`, then create again.
@@ -115,7 +115,7 @@ ctcli sandbox download "$SBX" /work/out.txt -o out.txt
 ```
 
 - Use paths under `/work`. Copy out what you keep before you delete.
-- ctcli moves one file of up to 200 MiB, in encrypted chunks. `download` refuses files over 10 MiB unless you pass `--max-bytes` (at most 200 MiB). For bigger files, `split -b 90M`, move the parts, and join them with `cat` inside the sandbox.
+- `upload` moves one file of up to 256 MiB, in encrypted chunks. `download` refuses files over 10 MiB unless you pass `--max-bytes` (at most 256 MiB; 200 MiB with `--unsealed`). For bigger files, `split -b 90M`, move the parts, and join them with `cat` inside the sandbox.
 
 ## 6. Background jobs (more than 45 seconds)
 
@@ -163,7 +163,7 @@ ctcli receipt verify --bundle evidence.json \
 - `FAIL` (exit 1) or `NOT PROVEN` (exit 3): the output names the line that failed. Report it; do not call the result verified.
 - Pin the two downloaded files through a channel you trust before you rely on them. The approved list is Cathedral's list of the guest builds it runs; those builds are not yet reproducible from source outside Cathedral.
 - A receipt proves which command ran where, not that your code is correct.
-- Known gaps in ctcli 0.6.0: a sandbox that starts from a pre-made room carries a `claim` guest receipt, and a sandbox where a command was cancelled (`exec-cancel`) carries an `exec_cancel` guest receipt. Verify answers FAIL on both. Report them as that gap, not as a failed run.
+- ctcli 0.6.1 accepts the `claim` guest receipt of a sandbox that starts from a pre-made room and the `exec_cancel` receipt of a cancelled command. ctcli 0.6.0 answers FAIL on both: update ctcli, and report such a FAIL from 0.6.0 as that gap, not as a failed run.
 
 ## 9. Delete
 
@@ -193,12 +193,14 @@ export CATHEDRAL_API_KEY="$(python3 -c 'import json,os;print(json.load(open(os.p
 - A task needs a prebuilt registry image; a sandbox create does not build a Dockerfile (one that is only `FROM` and `WORKDIR` runs on its `FROM` image).
 - The oracle agent replays the reference solution, so its reward is not a model score.
 
-## 11. CI: GitHub Actions in confidential sandboxes (early access)
+## 11. CI: GitHub Actions in confidential sandboxes
 
 Each job runs in its own confidential sandbox, billed by the second. Your person sets it up in the console; an API key cannot.
 
-1. Your person opens https://cathedral.computer/console/ci/ in a team. If it says "CI is in early access", they press "Ask for access".
-2. Once on, a Cathedral team owner or admin, who is also an owner or admin of the GitHub organization or account, presses "Connect GitHub", installs the Cathedral CI app and picks private repositories. Public repositories are refused for now: their jobs are never picked up.
+CI is open to every team: up to 2 jobs at once and 25 USD a month per team. Ask us if you need more.
+
+1. Your person opens https://cathedral.computer/console/ci/ in a team.
+2. A Cathedral team owner or admin, who is also an owner or admin of the GitHub organization or account, presses "Connect GitHub", installs the Cathedral CI app and picks private repositories. Public repositories are refused for now: their jobs are never picked up.
 3. You put one Cathedral label in `runs-on`, and nothing else:
 
 ```yaml
