@@ -2,7 +2,7 @@
 
 An agent skill for [Cathedral](https://cathedral.computer) confidential sandboxes: Linux rooms on AMD SEV-SNP machines, driven from the command line with `ctcli`.
 
-The skill is one file, [`skills/cathedral/SKILL.md`](skills/cathedral/SKILL.md). The same file is served at https://cathedral.computer/skill.md.
+The skill is one file, [`skills/cathedral/SKILL.md`](skills/cathedral/SKILL.md). The same file is served at https://cathedral.computer/skill.md; its source of truth is `src/skill/SKILL.md` in cathedralai/cathedral-site, and this copy is synced from it.
 
 It covers: installing ctcli, connecting by device login (your person approves a budget), creating a confidential sandbox, running commands, moving files, background jobs, snapshot and fork, verifying receipts offline, deleting, Harbor evals and CI on GitHub Actions. Every command in it was run on production before it was published.
 
